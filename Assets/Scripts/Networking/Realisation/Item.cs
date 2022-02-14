@@ -9,7 +9,7 @@ namespace Assets.Scripts.Modules.Networking.Realisation
 {
     public sealed class Item : NetworkObject, IDictionary<string, string>
     {
-        #region factory
+        #region Factory
         public class Factory : PlaceholderFactory<NetworkAPI.Item, Item>
         {
             public override Item Create(NetworkAPI.Item param)
@@ -31,10 +31,10 @@ namespace Assets.Scripts.Modules.Networking.Realisation
         }
         #endregion
 
+        #region Properties
         internal readonly NetworkAPI.Item item_token;
         private readonly ReactiveDictionary<string, string> _data = new ReactiveDictionary<string, string>();
-
-        #region public Properties
+        #region public
         public string this[string key]
         {
             get => _data[key];
@@ -51,8 +51,7 @@ namespace Assets.Scripts.Modules.Networking.Realisation
         public string id => item_token.ID_ToString;
         public byte[] IDAsByte => item_token.id;
         #endregion
-
-
+        #endregion
 
         public Item(NetworkAPI.Item item_token, Network network, [InjectOptional]Action<Item> callback) : base(network) 
             => this.item_token = item_token ?? throw new ArgumentNullException(nameof(item_token));

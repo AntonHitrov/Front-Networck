@@ -7,9 +7,10 @@ namespace Assets.Scripts.Modules.Networking.Realisation
 {
     public sealed class CurrentPlayer:NetworkObject
     {
+        #region Properties
         internal byte[] id => construct?.id;
 
-        #region private properties
+        #region private
         private NetworkAPI.Player.Construct construct;
         private bool isLoaded => construct != null;
         private bool HasPrivateKey => PlayerPrefs.HasKey(nameof(CurrentPlayer));
@@ -18,7 +19,7 @@ namespace Assets.Scripts.Modules.Networking.Realisation
         private void SavePrivateKey(string key) => PlayerPrefs.SetString(nameof(CurrentPlayer), key);
         #endregion
 
-        #region public propreties
+        #region public
         public Container Container => container.Invoke(); 
         private readonly Func<Container> container;
 
@@ -38,13 +39,13 @@ namespace Assets.Scripts.Modules.Networking.Realisation
 
         #endregion
         #endregion
-
+        #endregion
 
         internal CurrentPlayer(Network network,DiContainer diContainer) : base(network)
         {
-            container = BuildGeter(() => diContainer.Resolve<Container.Factory>().Create(construct.container) );
-            group = BuildGeter(()=> diContainer.Resolve<Group.Factory>().Create(construct.group));
-            room = BuildGeter(() => construct.room != null ? diContainer.Resolve<Room.Factory>().Create(construct.room) : null);
+            container = BuildGeter( () => diContainer.Resolve<Container.Factory>().Create(construct.container));
+            group = BuildGeter( () => diContainer.Resolve<Group.Factory>().Create(construct.group));
+            room = BuildGeter( () => construct.room != null ? diContainer.Resolve<Room.Factory>().Create(construct.room) : null);
         }
 
         #region Initialise
@@ -96,9 +97,5 @@ namespace Assets.Scripts.Modules.Networking.Realisation
             isInit = true;
         }
         #endregion
-
-
-
-
     }
 }

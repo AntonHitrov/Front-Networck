@@ -6,7 +6,6 @@ using System.Linq;
 
 namespace Assets.Scripts.Modules.Networking.Realisation
 {
-
     /// <summary>
     /// Предоставляет данные о контейнере с сервера 
     /// </summary>
@@ -80,36 +79,33 @@ namespace Assets.Scripts.Modules.Networking.Realisation
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.factory = factory ?? throw new ArgumentNullException(nameof(factory));
         }
-
-
-
         #region Initialisation
         private void Init()
         {
-            RequstInit()
-                .Subscribe(
-                (x) =>
+            RequstInit().Subscribe(
+                respone => 
                 {
-                    ResponeInitHandler(x);
+                    ResponeInitHandler(respone);
                     Await();
                 });
             Wait();
         }
+        
 
         private void Init(Action<Container> callBack)
             => RequstInit()
                 .ObserveOnMainThread()
                 .Subscribe(
-                (x) =>
+                (respone) =>
                 {
-                    ResponeInitHandler(x);
+                    ResponeInitHandler(respone);
                     callBack.Invoke(this);
                 });
 
-        private IObservable<NetworkAPI.Container.Init> RequstInit() =>
-            network.Request<NetworkAPI.Container.Load, NetworkAPI.Container.Init>(
+        private IObservable<NetworkAPI.Container.Init> RequstInit() 
+            => network.Request<NetworkAPI.Container.Load, NetworkAPI.Container.Init>(
                             new NetworkAPI.Container.Load() { id = container.id },
-                            (x) => x.ID_ToString == container.ID_ToString);
+                            (respone) => respone.ID_ToString == container.ID_ToString);
 
         private void ResponeInitHandler(NetworkAPI.Container.Init token)
         {
@@ -151,8 +147,6 @@ namespace Assets.Scripts.Modules.Networking.Realisation
                 }
         }
         #endregion
-
-
         #region Public interfase
         public void Unsubscribe()
         {
@@ -238,6 +232,5 @@ namespace Assets.Scripts.Modules.Networking.Realisation
                 Remove = items.Select(x => x.ID_ToString).ToArray()
             });
         #endregion
-
     }
 }

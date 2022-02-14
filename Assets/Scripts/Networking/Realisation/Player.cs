@@ -3,7 +3,6 @@ using Zenject;
 
 namespace Assets.Scripts.Modules.Networking.Realisation
 {
-
     public sealed class Player :NetworkObject
     {
         #region Factory
@@ -27,13 +26,14 @@ namespace Assets.Scripts.Modules.Networking.Realisation
             }
         }
         #endregion
-        
+
+        #region Properties
         #region public Properties
         public NetworkAPI.Player.Info info { get; private set; }
         public bool loaded => info != null;
         #endregion
-
         private readonly NetworkAPI.Player token;
+        #endregion
 
         public Player(Network network, NetworkAPI.Player token, [InjectOptional] Action<Player> callback) : base(network) 
             => this.token = token ?? throw new ArgumentNullException(nameof(token));

@@ -17,8 +17,7 @@ namespace Assets.Scripts.Modules.Networking
             lock (locker)
             {
                 hasWait = true;
-                if (!Monitor.Wait(locker, time))
-                    LogError($"Объект {this} разблокирован по завершению ожидания");
+                if (!Monitor.Wait(locker, time)) LogError($"Объект {this} разблокирован по завершению ожидания");
             }
         }
         protected internal void Wait() => Wait(TimeSpan.FromSeconds(5));
@@ -34,7 +33,6 @@ namespace Assets.Scripts.Modules.Networking
         #endregion
         
         protected readonly Network network;
-
         protected NetworkObject(Network network) 
             => this.network = network ?? throw new ArgumentNullException(nameof(network));
        
@@ -49,13 +47,12 @@ namespace Assets.Scripts.Modules.Networking
                        responeHandler(x);
                        Await();
                        Observable.Timer(TimeSpan.FromSeconds(0.5))
-                                   .ObserveOnMainThread()
-                                   .Subscribe(_ => callback?.Invoke());
+                                 .ObserveOnMainThread()
+                                 .Subscribe(_ => callback?.Invoke());
                    });
-            if (callback == null) Wait();
+            if (callback == null)
+                Wait();
         }
-       
-
         #endregion
 
         #region Logs

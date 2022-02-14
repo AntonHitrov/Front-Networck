@@ -2,22 +2,22 @@
 using LiteNetLib.Utils;
 using System;
 using UniRx;
-using Object = System.Object;
+using static Assets.Scripts.Modules.Networking.NetworkObject;
 
 namespace Assets.Scripts.Modules.Networking
 {
-    public class Network
+    public sealed class Network
     {
         private readonly NetPacketProcessor processor;
-        private Subject<Object> observable = new Subject<object>();
+        private readonly Subject<object> observable = new Subject<object>();
 
         internal static NetPeer CurrentConnection;
 
-        public Network(NetPacketProcessor processor, EventBasedNetListener listener, Subject<Object> observable)
+        public Network(NetPacketProcessor processor, EventBasedNetListener listener, Subject<object> observable)
         {
             this.processor = processor ?? throw new ArgumentNullException(nameof(processor));
             observable.Subscribe(this.observable);
-            observable.Subscribe(x=>NetworkObject.Log($"New message => {x}"));
+            observable.Subscribe(x=>Log($"New message => {x}"));
             listener.NetworkReceiveEvent += 
                 (NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod) => 
                 {
@@ -29,7 +29,7 @@ namespace Assets.Scripts.Modules.Networking
                         }
                         catch (Exception ex)
                         {
-                            NetworkObject.LogError($"{ex.Message} => {ex.StackTrace}" );
+                            LogError($"{ex.Message} => {ex.StackTrace}" );
                         }
                     }
                 };
@@ -38,7 +38,7 @@ namespace Assets.Scripts.Modules.Networking
         internal void Send<T>(T message, DeliveryMethod method = DeliveryMethod.ReliableOrdered)
             where T : class, NetworkAPI.IRequest, new()
         {
-            NetworkObject.Log($"Send message => {message}");
+            Log($"Send message => {message}");
             processor.Send<T>(CurrentConnection, message, method);
         }
 

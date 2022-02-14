@@ -64,8 +64,8 @@ namespace Assets.Scripts.Modules.Networking.Realisation
         }
         #endregion
 
-        #region public Properties
-
+        #region Properties
+        #region public
         private Container conteiner;
         public Container Container => conteiner ?? (init != null ? conteiner = factory.Create(init.items) : null);
 
@@ -85,7 +85,7 @@ namespace Assets.Scripts.Modules.Networking.Realisation
         public string id => unit.ID_ToString;
         #endregion
 
-        #region Internal properties
+        #region internal
         internal NetworkAPI.UnitParam param => init.param;
         internal NetworkAPI.UnitProperty property => init.property;
         internal NetworkAPI.Container items => init.items;
@@ -94,9 +94,11 @@ namespace Assets.Scripts.Modules.Networking.Realisation
         internal readonly NetworkAPI.Unit unit;
         #endregion
 
+        #region private
         private NetworkAPI.Unit.Init init;
         private Container.Factory factory;
-
+        #endregion
+        #endregion
 
         private Unit(Network network, Container.Factory factory, NetworkAPI.Unit unit, Action<Unit> callback = null) : base(network)
         {
@@ -117,10 +119,10 @@ namespace Assets.Scripts.Modules.Networking.Realisation
         private void Init(Action<Unit> callback = null) =>
             Init<NetworkAPI.Unit.Load, NetworkAPI.Unit.Init>(
                 new NetworkAPI.Unit.Load() { id = unit.id },
-                x => x.ID_ToString == unit.ID_ToString,
-                x => 
+                respone => respone.ID_ToString == unit.ID_ToString,
+                respone => 
                 {
-                    init = x;
+                    init = respone;
                     if (init.items == null || String.IsNullOrEmpty(init.items.ID_ToString))
                         LogError($"Юнит ({init.ID_ToString}) имеет инициализатор с пустым контейнером ");
 
@@ -131,11 +133,11 @@ namespace Assets.Scripts.Modules.Networking.Realisation
         private void InitNew(NetworkAPI.Unit.AddNew token, Action<Unit> callback = null) =>
             Init<NetworkAPI.Unit.AddNew, NetworkAPI.Unit.Init>(
                 token,
-                x => true,
-                x => 
+                respone => true,
+                respone => 
                 {
-                    init = x;
-                    unit.id = x.id;
+                    init = respone;
+                    unit.id = respone.id;
                     if (init.items == null || String.IsNullOrEmpty(init.items.ID_ToString))
                         LogError($"Юнит ({init.ID_ToString}) имеет инициализатор с пустым контейнером ");
                 },

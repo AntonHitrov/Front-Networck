@@ -6,8 +6,9 @@ namespace Assets.Scripts.Modules.Networking.Realisation
 {
     public sealed class Chat :NetworkObject
     {
+        #region Factory
         public class Factory : PlaceholderFactory<NetworkAPI.Chat, Chat> { }
-
+        #endregion
         private readonly NetworkAPI.Chat chat_token;
         private readonly CurrentPlayer player;
 
@@ -22,8 +23,8 @@ namespace Assets.Scripts.Modules.Networking.Realisation
             network.Send(new NetworkAPI.Chat.Subscribe() { name = chat_token.name });
             network.SubscribeRespones<NetworkAPI.Chat.NewMessage>((x) => x.name == chat_token.name).Subscribe(_newMessage);
         }
-        
 
+        #region Public interfase
         public void Close()
         {
             network.Send(new NetworkAPI.Chat.Unsubscribe() { name = chat_token.name },LiteNetLib.DeliveryMethod.ReliableOrdered);
@@ -42,5 +43,6 @@ namespace Assets.Scripts.Modules.Networking.Realisation
                         id = player.id
                     }
                 });
+        #endregion
     }
 }

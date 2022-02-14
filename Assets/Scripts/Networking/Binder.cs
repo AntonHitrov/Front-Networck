@@ -11,7 +11,6 @@ namespace Assets.Scripts.Modules.Networking
     static internal class Binder
     {
         #region Messages
-        private static MethodInfo MethodTo(string name) => typeof(Binder).GetMethod(name,BindingFlags.Static|BindingFlags.NonPublic);
         private static IEnumerable<Type> MessageTypes => NetworkTypes.Where(type => type.IsSealed);
         private static IEnumerable<Type> ValueTypes => NetworkTypes.Where(type => !type.IsSealed && type.GetInterfaces().Contains(typeof(INetSerializable)));
         private static IEnumerable<Type> NetworkTypes => typeof(APIObject).Assembly.GetTypes()
@@ -20,20 +19,30 @@ namespace Assets.Scripts.Modules.Networking
 
         internal static void BindObjects(NetPacketProcessor packetProcessor, IObserver<object> observer)
         {
-            if (packetProcessor == null) throw new ArgumentNullException(nameof(packetProcessor));
-            if (observer == null) throw new ArgumentNullException(nameof(observer));
-
-            object[] Param = new object[] { packetProcessor, observer };
+            object[] Param = new object[] 
+            {
+                packetProcessor ?? throw new ArgumentNullException(nameof(packetProcessor)),
+                observer ?? throw new ArgumentNullException(nameof(observer))
+            };
             Bind(Param, MethodTo(nameof(BindValue)), ValueTypes).Count();
             Bind(Param, MethodTo(nameof(BindMessage)), MessageTypes).Count();
         }
 
         private static IEnumerable<object> Bind(object[] Param, MethodInfo BinderMessages, IEnumerable<Type> types) 
-            => from type in types let method = BinderMessages.MakeGenericMethod(type) select method.Invoke(null, Param);
+            => from type in types
+               let method = BinderMessages.MakeGenericMethod(type)
+               select method.Invoke(null, Param);
+
+        private static MethodInfo MethodTo(string name) 
+            => typeof(Binder).GetMethod(name,BindingFlags.Static|BindingFlags.NonPublic);
+
         internal static void BindValue<T>(NetPacketProcessor packetProcessor, IObserver<object> observer)
-            where T : class, INetSerializable, new() => packetProcessor.RegisterNestedType(() => new T());
+            where T : class, INetSerializable, new()
+            => packetProcessor.RegisterNestedType(() => new T());
+
         internal static void BindMessage<T>(NetPacketProcessor packetProcessor, IObserver<object> observer)
-            where T : class, new() => packetProcessor.Subscribe((x) => observer.OnNext(x), () => new T());
+            where T : class, new()
+            => packetProcessor.Subscribe((x) => observer.OnNext(x), () => new T());
         #endregion
 
         #region Factory
@@ -48,7 +57,7 @@ namespace Assets.Scripts.Modules.Networking
             {
                 try
                 {
-                    
+
                     if (type.BaseType.Name.Contains("PlaceholderFactory"))
                         BuilderBinderFactory(type, Container);
                     else
@@ -58,11 +67,8 @@ namespace Assets.Scripts.Modules.Networking
                 catch(Exception exception)
                 {
                     NetworkObject.LogError( $"{exception.Message} from {type}"  );
-
                 }
             }
-            
-            
         }
 
         private static ConcreteIdArgConditionCopyNonLazyBinder BuilderBinderFactory(Type factory, DiContainer Container) 

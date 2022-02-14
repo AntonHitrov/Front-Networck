@@ -8,42 +8,34 @@ namespace Assets.Scripts.Modules.Networking
 {
     public class NetworkBehavior 
     {
-        #region ctr Parametrs
-        NetManager manager;
-        Configuration default_Conf;
-        List<Configuration> configurations;
-        #endregion
-
-        #region ParamToState
-
-        #region findServer
-        private class TryToConnect
-        {
-           public List<Configuration> NotTry;
-        }
-        TryToConnect toConnect;
-        #endregion
-
-        #region reconnection
-        ushort? tryCount = null;
-        #endregion
-
-        bool hasConnection => ServerConnection != null ? ServerConnection.ConnectionState == ConnectionState.Connected : false;
-
-        NetPeer ServerConnection => _serverConnection != null ? _serverConnection : _serverConnection = CurentServerConnection();
-        NetPeer _serverConnection;
-
-        Configuration CurrentConf;
-
-        #endregion
-
-        NetworkState state;
-        private Realisation.CurrentPlayer player;
-
         delegate void NetworkState(out NetworkState state);
 
+        #region Properties
+
+        #region private
+        private readonly NetManager manager;
+        private readonly Configuration default_Conf;
+        private readonly List<Configuration> configurations;
+        private NetworkState state;
+        private Realisation.CurrentPlayer player;
+        private Configuration CurrentConf;
+        private List<Configuration> toConnect;
+        private ushort? tryCount;
+        private bool hasConnection => ServerConnection != null ? 
+                                      ServerConnection.ConnectionState == ConnectionState.Connected : 
+                                      false;
+        private NetPeer _serverConnection;
+        private NetPeer ServerConnection => _serverConnection != null ?
+                                            _serverConnection :
+                                            _serverConnection = GetCurentServerConnection;
+        #endregion
+       
+        #region piblic
         public event Action<NetPeer> OnConnected;
         public event Action OnDisconected;
+        #endregion
+
+        #endregion
 
         public NetworkBehavior(NetManager manager, Configuration default_Conf, List<Configuration> configurations,Realisation.CurrentPlayer player)
         {
@@ -51,58 +43,58 @@ namespace Assets.Scripts.Modules.Networking
             this.default_Conf = default_Conf ?? throw new ArgumentNullException(nameof(default_Conf));
             this.configurations = configurations ?? throw new ArgumentNullException(nameof(configurations));
             this.player = player ?? throw new ArgumentNullException(nameof(player));
-            OnConnected += (x) => Network.CurrentConnection = x;
+            OnConnected += (peer) => Network.CurrentConnection = peer;
             OnDisconected += () => Network.CurrentConnection = null;
             manager.Start();
-            state = findServer;
+            state = FindServer;
             Observable.Timer(TimeSpan.FromSeconds(1))
-                        .Repeat().TakeWhile(x=>state != null)
-                        .Subscribe((x)=> { state.Invoke(out state); });
+                      .Repeat()
+                      .TakeWhile( _ => state != null)
+                      .Subscribe( _ => state.Invoke(out state));
         }
 
         #region State
-        private void begin_connection(out NetworkState state)
+        private void BeginConnection(out NetworkState state)
         {
             if (hasConnection)
             {
                 OnConnected?.Invoke(ServerConnection);
-                state = default_handler;
+                state = DefaultHandler;
                 return;
             }
-            if (WeTryConnectedToServer())
+            if (WeTryConnectedToServer)
             {
                 NetworkObject.Log("We try Connected to Server");
-                state = begin_connection;
+                state = BeginConnection;
                 return;
             }
             
             if (_serverConnection != null)
             {
                 OnDisconected.Invoke();
-                state = reconnection;
+                state = Reconnection;
                 return;
             }
             else
             {
-                state = findServer;
+                state = FindServer;
                 return;
             }
             
         }
 
-        private void findServer(out NetworkState state)
+        private void FindServer(out NetworkState state)
         {
             if (toConnect == null)
             {
-                toConnect = new TryToConnect();
-                toConnect.NotTry = configurations.ToList();
+                toConnect = configurations.ToList();
                 ConnectedTo(default_Conf);
-                state = begin_connection;
+                state = BeginConnection;
                 return;
             }
             else
             {
-                var newTry = toConnect.NotTry.FirstOrDefault();
+                var newTry = toConnect.FirstOrDefault();
                 if (newTry == null)
                 {
                     NetworkObject.LogAssertion("Мы не нашли ни одного сервера для соединения");
@@ -110,15 +102,15 @@ namespace Assets.Scripts.Modules.Networking
                     manager.Stop();
                     return;
                 }
-                toConnect.NotTry.Remove(newTry);
+                toConnect.Remove(newTry);
                 ConnectedTo(newTry);
-                state = begin_connection;
+                state = BeginConnection;
                 return;
             }
         }
 
 
-        private void reconnection(out NetworkState state)
+        private void Reconnection(out NetworkState state)
         {
             if (tryCount == null)
                 tryCount = 3;
@@ -128,23 +120,24 @@ namespace Assets.Scripts.Modules.Networking
             }
             else
             {
-                tryCount -= 1;
-                NetworkObject.LogAssertion($"Попытка востановить соединение № {tryCount}");
+                NetworkObject.LogAssertion($"Попытка востановить соединение № {--tryCount}");
                 ConnectedTo(CurrentConf);
-                state = begin_connection;
+                state = BeginConnection;
                 return;
             }
         }
 
-        private void default_handler(out NetworkState state)
+        private void DefaultHandler(out NetworkState state)
         {
             if (hasConnection)
             {
-                state = default_handler;
+                state = DefaultHandler;
                 if (!player.isInit) player.Init();
             }
             else
-                state = begin_connection;
+            {
+                state = BeginConnection;
+            }
         }
         #endregion
 
@@ -163,47 +156,51 @@ namespace Assets.Scripts.Modules.Networking
         /// Получить готовое соединение с сервером
         /// </summary>
         /// <returns></returns>
-        private NetPeer CurentServerConnection()
+        private NetPeer GetCurentServerConnection
         {
-            List<NetPeer> connectedPeers = new List<NetPeer>();
-            manager.GetPeersNonAlloc(connectedPeers,ConnectionState.Connected);
-            foreach (var peer in connectedPeers)
-                if (default_Conf.addres == peer.EndPoint.Address.ToString())
-                    return peer;
-            foreach (var peer in connectedPeers)
+            get
             {
-                var addres = peer.EndPoint.Address.ToString();
-                if (configurations.Where(x => x.addres == addres).Count() >= 1)
+                List<NetPeer> connectedPeers = new List<NetPeer>();
+                manager.GetPeersNonAlloc(connectedPeers, ConnectionState.Connected);
+                foreach (var peer in connectedPeers)
+                    if (default_Conf.addres == peer.EndPoint.Address.ToString())
+                        return peer;
+                foreach (var peer in connectedPeers)
                 {
-                    return peer;
+                    var addres = peer.EndPoint.Address.ToString();
+                    if (configurations.Where(x => x.addres == addres).Count() >= 1)
+                    {
+                        return peer;
+                    }
                 }
+                return null;
             }
-            return null;
         }
 
         /// <summary>
         /// Ожидаем ли мы соединение с одним из серверов?
         /// </summary>
         /// <returns></returns>
-        private bool WeTryConnectedToServer()
+        private bool WeTryConnectedToServer
         {
-            List<NetPeer> peers = new List<NetPeer>();
-            manager.GetPeersNonAlloc(peers, ConnectionState.Outgoing);
-            foreach (var peer in peers)
-                if (default_Conf.addres == peer.EndPoint.Address.ToString())
-                    return true;
-            foreach (var peer in peers)
+            get
             {
-                var addres = peer.EndPoint.Address.ToString();
-                if (configurations.Where(x => x.addres == addres).Count() >= 1)
+                List<NetPeer> peers = new List<NetPeer>();
+                manager.GetPeersNonAlloc(peers, ConnectionState.Outgoing);
+                foreach (var peer in peers)
+                    if (default_Conf.addres == peer.EndPoint.Address.ToString())
+                        return true;
+                foreach (var peer in peers)
                 {
-                    return true;
+                    var addres = peer.EndPoint.Address.ToString();
+                    if (configurations.Where(x => x.addres == addres).Count() >= 1)
+                    {
+                        return true;
+                    }
                 }
+                return false;
             }
-            return false;
-
         }
         #endregion
     }
-
 }

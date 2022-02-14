@@ -11,19 +11,22 @@ namespace Assets.Scripts.Modules.Networking.Realisation
         #region Factory
         public class Factory : PlaceholderFactory<NetworkAPI.Room, Room> { }
         #endregion
-        
-        #region public Properties
+
+        #region Properties
+        #region public
         public IObservable<NetworkAPI.Player> ToEnter => _players?.ObserveAdd().Select(x=>x.Value).ObserveOnMainThread();
         public IObservable<NetworkAPI.Player> ToLeave => _players?.ObserveRemove().Select(x => x.Value).ObserveOnMainThread();
         public IEnumerable<NetworkAPI.Player> players => _players;
+        public Chat Chat => _chat ?? (_chat = chat_factory.Create(chat)); 
+        #endregion
+        #region private
         private NetworkAPI.Chat chat;
         private Chat _chat;
-        public Chat Chat { get => _chat ?? (_chat = chat_factory.Create(chat)); }
-        #endregion
-
         private readonly NetworkAPI.Room room;
         private readonly Chat.Factory chat_factory;
         private ReactiveCollection<NetworkAPI.Player> _players = new ReactiveCollection<NetworkAPI.Player>();
+        #endregion
+        #endregion
 
         internal Room(NetworkAPI.Room room, Chat.Factory chat_factory, Network network) : base(network)
         {

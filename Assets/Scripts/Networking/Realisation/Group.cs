@@ -31,19 +31,21 @@ namespace Assets.Scripts.Modules.Networking.Realisation
         }
         #endregion
 
+        #region Properties
+        #region private readonly
         private readonly NetworkAPI.Group group;
         private readonly Unit.Factory unitFactory;
         private readonly Unit.Factory.Async unitFactoryAsync;
-
         private readonly ReactiveCollection<Unit> units = new ReactiveCollection<Unit>();
-
-        #region public Properties
+        #endregion
+        #region public
         public IObservable<Unit> add => units.ObserveAdd().Select(x=>x.Value).ObserveOnMainThread();
         public IObservable<Unit> removed => units.ObserveRemove().Select(x => x.Value).ObserveOnMainThread();
         public IEnumerable<Unit> Units { get { if (_units == null) Wait(); return _units; } private set => _units = value; }
         private IEnumerable<Unit> _units;
         public Unit First => Units.First();
         public string id => group.ID_ToString;
+        #endregion
         #endregion
 
         public Group(Network network, NetworkAPI.Group group, Unit.Factory.Async unitFactoryAsync, Unit.Factory unitFactory,[InjectOptional]Action<Group> callback) : base(network)
@@ -106,9 +108,9 @@ namespace Assets.Scripts.Modules.Networking.Realisation
                 });
         #endregion
 
-
         private class LoaderUnits : IEnumerable<Unit>
         {
+            #region Properties
             private ReactiveCollection<Unit> units;
             private NetworkAPI.Group.Init init;
             private Unit.Factory factory;
@@ -123,7 +125,7 @@ namespace Assets.Scripts.Modules.Networking.Realisation
                     return units;
                 }
             }
-
+            #endregion
             internal LoaderUnits(ReactiveCollection<Unit> units, NetworkAPI.Group.Init init, Unit.Factory factory)
             {
                 this.units = units ?? throw new ArgumentNullException(nameof(units));
@@ -132,9 +134,7 @@ namespace Assets.Scripts.Modules.Networking.Realisation
             }
 
             public IEnumerator<Unit> GetEnumerator() => isLoaded ? units.GetEnumerator() : Load.GetEnumerator();
-
-
-            IEnumerator IEnumerable.GetEnumerator() => isLoaded ? units.GetEnumerator() : Load.GetEnumerator();
+            private IEnumerator IEnumerable.GetEnumerator() => isLoaded ? units.GetEnumerator() : Load.GetEnumerator();
         }
     }
 }
